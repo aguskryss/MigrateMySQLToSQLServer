@@ -357,16 +357,12 @@ class DataMigration
                                                 // Compara con DateTime.MinValue o con la fecha inválida "00/00/0000 00:00:00"
                                                 if (dateValue == DateTime.MinValue || dateValue.ToString("dd/MM/yyyy HH:mm:ss") == "00/00/0000 00:00:00")
                                                 {
-                                                    sqlCommand.Parameters.AddWithValue($"@{mappedColumn}", DBNull.Value);
+                                                    sqlCommand.Parameters.AddWithValue($"@{mappedColumn}", null);
                                                 }
                                                 else
                                                 {
                                                     sqlCommand.Parameters.AddWithValue($"@{mappedColumn}", dateValue);
                                                 }
-                                            }
-                                            else if (value is string)
-                                            {
-                                                
                                             }
 
                                             else
