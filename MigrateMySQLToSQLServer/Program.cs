@@ -316,11 +316,20 @@ class DataMigration
                                 // Aquí verificamos si el registro ya existe antes de insertarlo
                                 string idColumnName = "id";  // Usa el nombre del campo único para la tabla
                                 object recordId = reader[idColumnName];  // Aquí puedes cambiar la lógica para otros campos únicos
-
+                                                                         // Verificar si el registro tiene provider_id como NULL o está vacío
+                                if (mySqlTableName == "turnos")
+                                {
+                                    object providerIdValue = reader["proveedor_id"];
+                                    if (providerIdValue == DBNull.Value || string.IsNullOrWhiteSpace(providerIdValue.ToString()))
+                                    {
+                                        continue; // Ignorar este registro
+                                    }
+                                }
                                 if (CheckIfRecordExists(sqlServerConnection, sqlServerTableName, idColumnName, recordId))
                                 {
                                     continue;  // Si el registro ya existe, lo saltamos
                                 }
+                                
 
                                 string insertQuery = GenerateInsertQuery(reader, columnMappings, sqlServerTableName);
                                 SqlCommand sqlCommand = new SqlCommand(insertQuery, sqlServerConnection);
@@ -332,6 +341,8 @@ class DataMigration
                                     {
                                         string mappedColumn = columnMappings[columnName];
                                         object value = reader.GetValue(i);
+                                        // Si es la columna "clave", generar el hash
+                                        
                                         if (value == DBNull.Value)
                                         {
                                             sqlCommand.Parameters.AddWithValue($"@{mappedColumn}", DBNull.Value);
@@ -477,6 +488,7 @@ class DataMigration
 
                 object value = reader[columnName];
                 string valueString;
+                
                 if (value == DBNull.Value)
                 {
                     valueString = "NULL";
@@ -487,7 +499,15 @@ class DataMigration
                 }
                 else
                 {
-                    valueString = $"'{value.ToString().Replace("'", "''")}'";
+                    if (columnName == "clave" && value != DBNull.Value)
+                    {
+                        valueString = $"'{HashPassword(value.ToString())}'";
+                    }
+                    else
+                    {
+                        valueString = $"'{value.ToString().Replace("'", "''")}'";
+                    }
+                    
                 }
                 values.Add(valueString);
             }
@@ -503,6 +523,14 @@ class DataMigration
     }
 
 
+    private static string HashPassword(string password)
+    {
+        using (var sha256 = System.Security.Cryptography.SHA256.Create())
+        {
+            byte[] bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            return BitConverter.ToString(bytes).Replace("-", "").ToLower();
+        }
+    }
 
 }
 
